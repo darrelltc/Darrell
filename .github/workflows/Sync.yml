@@ -1,0 +1,51 @@
+name: Multi-Repo Upstream Sync
+
+on:
+  schedule:
+    - cron: "0 1 * * 1"  # 每周一凌晨 1 点
+  workflow_dispatch:
+
+jobs:
+  sync_repos:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo:
+          - { target_repo: "darrelltc/edgetunnel", upstream_repo: "cmliu/edgetunnel", branch: "main" }
+          - { target_repo: "darrelltc/Serv00-LoadBalance", upstream_repo: "KusanagiKW/Serv00-LoadBalance", branch: "main" }
+          - { target_repo: "darrelltc/WorkerVless2sub", upstream_repo: "cmliu/WorkerVless2sub", branch: "main" }
+          - { target_repo: "darrelltc/CF-Workers-SUB", upstream_repo: "cmliu/CF-Workers-SUB", branch: "main" }
+          - { target_repo: "darrelltc/gfwlist", upstream_repo: "gfwlist/gfwlist", branch: "master" }
+
+          # 添加更多仓库
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo.target_repo }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add upstream repository
+        run: |
+          git remote add upstream https://github.com/${{ matrix.repo.upstream_repo }}.git
+          git fetch upstream ${{ matrix.repo.branch }}
+
+      - name: Check for updates
+        id: check_update
+        run: |
+          UPSTREAM_COMMIT=$(git rev-parse upstream/${{ matrix.repo.branch }})
+          LOCAL_COMMIT=$(git rev-parse HEAD)
+          if [ "$UPSTREAM_COMMIT" != "$LOCAL_COMMIT" ]; then
+            echo "::set-output name=needs_sync::true"
+          else
+            echo "::set-output name=needs_sync::false"
+          fi
+
+      - name: Sync with upstream
+        if: steps.check_update.outputs.needs_sync == 'true'
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+        with:
+          upstream_sync_repo: ${{ matrix.repo.upstream_repo }}
+          upstream_sync_branch: ${{ matrix.repo.branch }}
+          target_sync_branch: ${{ matrix.repo.branch }}
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }
