@@ -2,7 +2,7 @@ name: Multi-Repo Upstream Sync
 
 on:
   schedule:
-    - cron: "0 1 * * *"  # 每天凌晨 1 点
+    - cron: "0 1 * * 1"  # 每周一凌晨 1 点
   workflow_dispatch:
 
 jobs:
@@ -48,5 +48,4 @@ jobs:
           upstream_sync_repo: ${{ matrix.repo.upstream_repo }}
           upstream_sync_branch: ${{ matrix.repo.branch }}
           target_sync_branch: ${{ matrix.repo.branch }}
-          target_repo_token: ${{ secrets.GITHUB_TOKEN }
-         
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
